@@ -1477,9 +1477,14 @@ body {
 
     .sidebar {
         width: 240px;
+        height: 100vh;
+        height: 100dvh;
+        max-height: 100dvh;
         transform: translateX(-100%);
         transition: transform 0.3s ease;
         z-index: 200;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .sidebar.open {
@@ -1496,6 +1501,16 @@ body {
     .sb-profile { justify-content: flex-start; padding: 10px; }
     .sb-top { padding: 20px 18px 14px; }
     .sb-brand { justify-content: flex-start; }
+
+    /* Tombol logout selalu nempel & keliatan di bawah, walau menu sidebar
+       lebih panjang dari layar atau viewport ketutup address bar browser */
+    .sb-bottom {
+        position: sticky;
+        bottom: 0;
+        background: var(--navy-deep);
+        z-index: 2;
+        flex-shrink: 0;
+    }
 
     .main-area { margin-left: 0; }
     .view { padding: 16px; }
