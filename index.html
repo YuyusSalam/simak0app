@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIMAK — Sistem Informasi Manajemen Kelas</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- ============ LOGIN PAGE ============ -->
+    <div id="loginPage" class="page active">
+        <div class="login-left">
+            <div class="login-left-inner">
+                <div class="login-branding">
+                    <svg class="login-logo-svg" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="4" y="20" width="52" height="36" rx="3" stroke="currentColor" stroke-width="2.5"/>
+                        <path d="M12 20V14a18 18 0 0 1 36 0v6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                        <rect x="20" y="30" width="20" height="4" rx="1" fill="currentColor" opacity="0.3"/>
+                        <rect x="20" y="38" width="14" height="4" rx="1" fill="currentColor" opacity="0.3"/>
+                        <circle cx="30" cy="11" r="3" fill="currentColor"/>
+                    </svg>
+                    <div>
+                        <h1 class="login-brand-name">SIMAK</h1>
+                        <p class="login-brand-sub">Sistem Informasi Manajemen Kelas</p>
+                    </div>
+                </div>
+                <div class="login-hero-text">
+                    <h2>Kelola Ruangan Kelas dengan Mudah dan Terorganisir</h2>
+                    <p>Platform terpadu untuk check-in ruangan, absensi mahasiswa, dan komunikasi antara keti dan dosen pengajar.</p>
+                </div>
+                <div class="login-features">
+                    <div class="login-feature">
+                        <span class="lf-num">01</span>
+                        <div><strong>Monitoring Ruangan</strong><p>Pantau status semua ruangan secara real-time</p></div>
+                    </div>
+                    <div class="login-feature">
+                        <span class="lf-num">02</span>
+                        <div><strong>Absensi Digital</strong><p>Kelola kehadiran mahasiswa dengan efisien</p></div>
+                    </div>
+                    <div class="login-feature">
+                        <span class="lf-num">03</span>
+                        <div><strong>Komunikasi Terpadu</strong><p>Chat langsung antara keti dan dosen</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="login-right">
+            <div class="login-box">
+                <h3>Masuk ke Akun Anda</h3>
+                <p class="login-box-sub">Pilih role dan masukkan kredensial</p>
+                <div class="login-tabs">
+                    <button class="tab-btn active" data-role="keti">Keti</button>
+                    <button class="tab-btn" data-role="dosen">Dosen</button>
+                    <button class="tab-btn" data-role="admin">Admin</button>
+                </div>
+                <form id="loginForm" autocomplete="off">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="loginUsername" placeholder="Masukkan username" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="loginPassword" placeholder="Masukkan password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-login">Masuk</button>
+                </form>
+                <p class="login-footer-text">© 2026 SIMAK — Fakultas Teknik</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ KETI DASHBOARD ============ -->
+    <div id="ketiDashboard" class="page">
+        <nav class="sidebar" id="ketiSidebar">
+            <div class="sb-top">
+                <div class="sb-brand">
+                    <svg class="sb-logo" viewBox="0 0 40 40" fill="none"><rect x="2" y="14" width="36" height="24" rx="2" stroke="currentColor" stroke-width="2"/><path d="M10 14V10a10 10 0 0 1 20 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="20" cy="8" r="2" fill="currentColor"/></svg>
+                    <span class="sb-brand-text">SIMAK</span>
+                </div>
+            </div>
+            <div class="sb-profile">
+                <div class="sb-avatar" id="ketiAvatar">K</div>
+                <div class="sb-profile-info">
+                    <span class="sb-name" id="ketiName">Keti</span>
+                    <span class="sb-role">Keti Kelas</span>
+                </div>
+            </div>
+            <div class="sb-divider"></div>
+            <span class="sb-label">Navigasi</span>
+            <ul class="sb-nav">
+                <li><button class="sb-link active" data-view="cekRuangan"><span class="sb-icon">◫</span> Cek Ruangan</button></li>
+                <li><button class="sb-link" data-view="checkin"><span class="sb-icon">☑</span> Check-in</button></li>
+                <li><button class="sb-link" data-view="checkout"><span class="sb-icon">☒</span> Check-out</button></li>
+            </ul>
+            <span class="sb-label">Aktivitas</span>
+            <ul class="sb-nav">
+                <li><button class="sb-link" data-view="absensi"><span class="sb-icon">☰</span> Absensi</button></li>
+                <li><button class="sb-link" data-view="chat"><span class="sb-icon">✉</span> Chat <span class="sb-badge" id="chatBadge" style="display:none;">0</span></button></li>
+            </ul>
+            <div class="sb-bottom">
+                <button class="sb-logout" onclick="logout()">Keluar →</button>
+            </div>
+        </nav>
+        <main class="main-area">
+            <header class="topbar">
+                <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()">☰</button>
+                <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+                <div>
+                    <h2 class="topbar-title" id="pageTitle">Cek Ruangan</h2>
+                    <span class="topbar-date" id="pageDate"></span>
+                </div>
+                <div class="topbar-clock" id="topbarClock"></div>
+            </header>
+
+            <!-- Cek Ruangan -->
+            <div id="cekRuanganView" class="view active">
+                <div class="stats-grid">
+                    <div class="stat-box"><span class="stat-val" id="statTotal">0</span><span class="stat-lbl">Total Ruangan</span></div>
+                    <div class="stat-box stat-green"><span class="stat-val" id="statFree">0</span><span class="stat-lbl">Kosong</span></div>
+                    <div class="stat-box stat-amber"><span class="stat-val" id="statActive">0</span><span class="stat-lbl">Berlangsung</span></div>
+                    <div class="stat-box stat-sky"><span class="stat-val" id="statBooked">0</span><span class="stat-lbl">Booked</span></div>
+                </div>
+                <div class="view-toolbar">
+                    <h3>Daftar Ruangan</h3>
+                    <div class="filters">
+                        <button class="fbtn active" data-filter="all">Semua</button>
+                        <button class="fbtn" data-filter="kosong"><i class="fdot green"></i>Kosong</button>
+                        <button class="fbtn" data-filter="berlangsung"><i class="fdot amber"></i>Berlangsung</button>
+                        <button class="fbtn" data-filter="booked"><i class="fdot sky"></i>Booked</button>
+                    </div>
+                </div>
+                <div id="roomList" class="room-grid"></div>
+            </div>
+
+            <!-- Check-in -->
+            <div id="checkinView" class="view">
+                <div id="bioProfileSection" class="panel">
+                    <div class="panel-head">
+                        <h3>Lengkapi Profil Keti</h3>
+                        <p>Isi data diri sebelum melakukan check-in ruangan</p>
+                    </div>
+                    <form id="bioForm" class="form-row">
+                        <div class="form-group"><label>Nama Keti</label><input type="text" id="ketiNameInput" placeholder="Nama lengkap" required></div>
+                        <div class="form-group"><label>Angkatan</label><input type="text" id="ketiAngkatan" placeholder="Contoh: 2023" required></div>
+                        <div class="form-group"><label>Kelas</label><input type="text" id="ketiKelas" placeholder="Contoh: TI A" required></div>
+                        <div class="form-group form-full"><button type="submit" class="btn btn-primary">Simpan Profil</button></div>
+                    </form>
+                </div>
+                <div id="checkinSection" style="display:none;">
+                    <div class="profile-strip">
+                        <div class="ps-avatar" id="checkinAvatar">K</div>
+                        <div class="ps-info">
+                            <strong id="displayName"></strong>
+                            <span><em id="displayAngkatan"></em> · <em id="displayKelas"></em></span>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-head">
+                            <h3>Form Check-in Ruangan</h3>
+                            <p>Lengkapi seluruh field di bawah ini</p>
+                        </div>
+                        <form id="checkinForm" class="form-row">
+                            <div class="form-group form-full"><label>Pilih Ruangan</label><select id="checkinRoom" required><option value="">-- Pilih Ruangan --</option></select></div>
+                            <div class="form-group"><label>Jam Masuk</label><input type="time" id="checkinTime" required></div>
+                            <div class="form-group"><label>Jam Keluar</label><input type="time" id="checkoutTime" required></div>
+                            <div class="form-group"><label>Pilih Dosen</label><select id="dosenDropdown"><option value="">-- Pilih dari daftar --</option></select></div>
+                            <div class="form-group"><label>Ketik Manual</label><input type="text" id="dosenName" placeholder="Jika dosen tidak ada di daftar"></div>
+                            <div class="form-group"><label>Mata Kuliah</label><input type="text" id="mataKuliah" placeholder="Nama mata kuliah" required></div>
+                            <div class="form-group"><label>Mode Kelas</label><select id="classMode" required><option value="offline">Offline (Tatap Muka)</option><option value="zoom">Zoom (Online)</option></select></div>
+                            <div class="form-group form-full"><button type="submit" class="btn btn-primary">Check-in Sekarang</button></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Checkout -->
+            <div id="checkoutView" class="view">
+                <div id="checkoutList"></div>
+            </div>
+
+            <!-- Absensi -->
+            <div id="absensiView" class="view">
+                <div id="absensiNotAvailable" class="empty-box">
+                    <h3>Belum Ada Sesi Aktif</h3>
+                    <p>Lakukan check-in ruangan terlebih dahulu untuk mengakses absensi.</p>
+                </div>
+                <div id="absensiContent" style="display:none;">
+                    <div class="abs-bar">
+                        <h3 id="absensiRoomInfo"></h3>
+                        <div class="abs-actions">
+                            <button class="btn btn-outline" onclick="showAddStudent()">+ Tambah Mahasiswa</button>
+                            <button class="btn btn-accent" onclick="exportToExcel()">↓ Export Excel</button>
+                        </div>
+                    </div>
+                    <div id="addStudentForm" style="display:none;" class="panel">
+                        <form id="studentForm" class="form-row">
+                            <div class="form-group"><label>Nama Mahasiswa</label><input type="text" id="studentName" required></div>
+                            <div class="form-group"><label>NPM</label><input type="text" id="studentNPM" required></div>
+                            <div class="form-group form-full"><button type="submit" class="btn btn-primary">Tambah</button> <button type="button" class="btn btn-ghost" onclick="hideAddStudent()">Batal</button></div>
+                        </form>
+                    </div>
+                    <div id="studentList"></div>
+                </div>
+            </div>
+
+            <!-- Chat -->
+            <div id="chatView" class="view">
+                <div class="chat-wrap">
+                    <aside class="chat-side">
+                        <h4>Kontak</h4>
+                        <input type="text" id="chatSearchInput" class="chat-search-box" placeholder="Cari kontak...">
+                        <div id="userList" class="chat-contacts"></div>
+                    </aside>
+                    <section class="chat-body">
+                        <div id="chatPlaceholder" class="chat-empty">
+                            <p>Pilih kontak untuk mulai percakapan</p>
+                        </div>
+                        <div id="chatActiveArea" style="display:none;">
+                            <div id="chatHeader" class="chat-top"></div>
+                            <div id="chatMessages" class="chat-msgs"></div>
+                            <div id="chatInput" class="chat-bar">
+                                <input type="text" id="messageInput" placeholder="Ketik pesan...">
+                                <button onclick="sendMessage()" class="chat-send">Kirim</button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ============ DOSEN DASHBOARD ============ -->
+    <div id="dosenDashboard" class="page">
+        <nav class="sidebar">
+            <div class="sb-top">
+                <div class="sb-brand">
+                    <svg class="sb-logo" viewBox="0 0 40 40" fill="none"><rect x="2" y="14" width="36" height="24" rx="2" stroke="currentColor" stroke-width="2"/><path d="M10 14V10a10 10 0 0 1 20 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="20" cy="8" r="2" fill="currentColor"/></svg>
+                    <span class="sb-brand-text">SIMAK</span>
+                </div>
+            </div>
+            <div class="sb-profile">
+                <div class="sb-avatar sb-avatar-dosen" id="dosenAvatar">D</div>
+                <div class="sb-profile-info">
+                    <span class="sb-name" id="dosenDisplayName">Dosen</span>
+                    <span class="sb-role">Dosen Pengajar</span>
+                </div>
+            </div>
+            <div class="sb-divider"></div>
+            <span class="sb-label">Menu</span>
+            <ul class="sb-nav">
+                <li><button class="sb-link active" data-view="kelasSaya"><span class="sb-icon">▤</span> Kelas Saya</button></li>
+                <li><button class="sb-link" data-view="chatDosen"><span class="sb-icon">✉</span> Chat</button></li>
+            </ul>
+            <div class="sb-bottom"><button class="sb-logout" onclick="logout()">Keluar →</button></div>
+        </nav>
+        <main class="main-area">
+            <header class="topbar">
+                <div><h2 class="topbar-title" id="dosenPageTitle">Kelas Saya</h2></div>
+                <div class="topbar-clock" id="topbarClockDosen"></div>
+            </header>
+            <div id="kelasSayaView" class="view active">
+                <div class="search-bar"><input type="text" id="searchKelas" placeholder="Cari kelas atau mata kuliah..."></div>
+                <div id="kelasList"></div>
+            </div>
+            <div id="chatDosenView" class="view">
+                <div class="chat-wrap">
+                    <aside class="chat-side">
+                        <h4>Daftar Keti</h4>
+                        <div id="ketiList" class="chat-contacts"></div>
+                    </aside>
+                    <section class="chat-body">
+                        <div id="chatPlaceholderDosen" class="chat-empty"><p>Pilih keti untuk mulai chat</p></div>
+                        <div id="chatActiveAreaDosen" style="display:none;">
+                            <div id="chatHeaderDosen" class="chat-top"></div>
+                            <div id="chatMessagesDosen" class="chat-msgs"></div>
+                            <div id="chatInputDosen" class="chat-bar">
+                                <input type="text" id="messageInputDosen" placeholder="Ketik pesan...">
+                                <button onclick="sendMessageDosen()" class="chat-send">Kirim</button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ============ ADMIN DASHBOARD ============ -->
+    <div id="adminDashboard" class="page">
+        <nav class="sidebar">
+            <div class="sb-top">
+                <div class="sb-brand">
+                    <svg class="sb-logo" viewBox="0 0 40 40" fill="none"><rect x="2" y="14" width="36" height="24" rx="2" stroke="currentColor" stroke-width="2"/><path d="M10 14V10a10 10 0 0 1 20 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="20" cy="8" r="2" fill="currentColor"/></svg>
+                    <span class="sb-brand-text">SIMAK</span>
+                </div>
+            </div>
+            <div class="sb-profile">
+                <div class="sb-avatar sb-avatar-admin">A</div>
+                <div class="sb-profile-info"><span class="sb-name">Administrator</span><span class="sb-role">Super Admin</span></div>
+            </div>
+            <div class="sb-divider"></div>
+            <span class="sb-label">Kelola Data</span>
+            <ul class="sb-nav">
+                <li><button class="sb-link active" data-view="manageKeti"><span class="sb-icon">◉</span> Kelola Keti</button></li>
+                <li><button class="sb-link" data-view="manageDosen"><span class="sb-icon">◉</span> Kelola Dosen</button></li>
+                <li><button class="sb-link" data-view="manageRooms"><span class="sb-icon">◉</span> Kelola Ruangan</button></li>
+            </ul>
+            <div class="sb-bottom"><button class="sb-logout" onclick="logout()">Keluar →</button></div>
+        </nav>
+        <main class="main-area">
+            <header class="topbar"><div><h2 class="topbar-title">Admin Panel</h2></div><div class="topbar-clock" id="topbarClockAdmin"></div></header>
+            <div id="manageKetiView" class="view active">
+                <div class="admin-bar"><h3>Daftar Keti</h3><button class="btn btn-primary" onclick="showAddKeti()">+ Tambah Keti</button></div>
+                <div id="addKetiForm" style="display:none;" class="panel"><form id="ketiForm" class="form-row"><div class="form-group"><label>Username</label><input type="text" id="newKetiUsername" required></div><div class="form-group"><label>Password</label><input type="password" id="newKetiPassword" required></div><div class="form-group"><label>Nama Lengkap</label><input type="text" id="newKetiName" required></div><div class="form-group form-full"><button type="submit" class="btn btn-primary">Simpan</button> <button type="button" class="btn btn-ghost" onclick="hideAddKeti()">Batal</button></div></form></div>
+                <div id="ketiTable"></div>
+            </div>
+            <div id="manageDosenView" class="view">
+                <div class="admin-bar"><h3>Daftar Dosen</h3><button class="btn btn-primary" onclick="showAddDosen()">+ Tambah Dosen</button></div>
+                <div id="addDosenForm" style="display:none;" class="panel"><form id="dosenForm" class="form-row"><div class="form-group"><label>Username</label><input type="text" id="newDosenUsername" required></div><div class="form-group"><label>Password</label><input type="password" id="newDosenPassword" required></div><div class="form-group"><label>Nama Lengkap</label><input type="text" id="newDosenName" required></div><div class="form-group form-full"><button type="submit" class="btn btn-primary">Simpan</button> <button type="button" class="btn btn-ghost" onclick="hideAddDosen()">Batal</button></div></form></div>
+                <div id="dosenTable"></div>
+            </div>
+            <div id="manageRoomsView" class="view">
+                <div class="admin-bar"><h3>Daftar Ruangan</h3><button class="btn btn-primary" onclick="showAddRoom()">+ Tambah Ruangan</button></div>
+                <div id="addRoomForm" style="display:none;" class="panel"><form id="roomForm" class="form-row"><div class="form-group"><label>Nama Ruangan</label><input type="text" id="newRoomName" required></div><div class="form-group"><label>Lantai</label><input type="number" id="newRoomFloor" min="1" required></div><div class="form-group"><label>Tipe</label><select id="newRoomType" required><option value="kelas">Kelas</option><option value="lab">Lab</option></select></div><div class="form-group form-full"><button type="submit" class="btn btn-primary">Simpan</button> <button type="button" class="btn btn-ghost" onclick="hideAddRoom()">Batal</button></div></form></div>
+                <div id="roomTable"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="successModal" class="modal"><div class="modal-bg" onclick="closeModal()"></div><div class="modal-box"><div class="modal-icon modal-ok">✓</div><h2>Check-in Berhasil</h2><p id="successMessage"></p><button class="btn btn-primary" onclick="closeModal()">Tutup</button></div></div>
+    <div id="errorModal" class="modal"><div class="modal-bg" onclick="closeErrorModal()"></div><div class="modal-box"><div class="modal-icon modal-err">✕</div><h2>Validasi Gagal</h2><p id="errorMessage"></p><button class="btn btn-primary" onclick="closeErrorModal()">Tutup</button></div></div>
+    <div id="roomDetailModal" class="modal"><div class="modal-bg" onclick="closeRoomDetail()"></div><div class="modal-box" style="text-align:left;max-width:420px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;"><h2 style="margin:0;font-size:1.1rem;" id="rdTitle"></h2><span id="rdBadge"></span></div><div id="rdBody" style="font-size:0.88rem;color:var(--text-mid);line-height:1.8;"></div><button class="btn btn-ghost" onclick="closeRoomDetail()" style="margin-top:18px;width:100%;justify-content:center;">Tutup</button></div></div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Confirm Card -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-bg" onclick="closeConfirm(false)"></div>
+        <div class="modal-box" style="text-align:left;max-width:400px;">
+            <div class="confirm-card-head">
+                <div class="confirm-card-icon" id="confirmIcon">?</div>
+                <h3 id="confirmTitle">Konfirmasi</h3>
+            </div>
+            <p id="confirmMessage" style="font-size:0.88rem;color:var(--text-mid);line-height:1.6;margin-bottom:20px;"></p>
+            <div class="confirm-actions">
+                <button class="btn btn-ghost" id="confirmNo" onclick="closeConfirm(false)">Batal</button>
+                <button class="btn btn-primary" id="confirmYes" onclick="closeConfirm(true)">Ya, Lanjutkan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase JS Client (harus dimuat sebelum script.js) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js"></script>
+</body>
+</html>
