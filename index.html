@@ -95,6 +95,7 @@
             </ul>
             <span class="sb-label">Aktivitas</span>
             <ul class="sb-nav">
+                <li><button class="sb-link" data-view="jadwalTetap"><span class="sb-icon">🗓</span> Jadwal Tetap</button></li>
                 <li><button class="sb-link" data-view="absensi"><span class="sb-icon">☰</span> Absensi</button></li>
                 <li><button class="sb-link" data-view="chat"><span class="sb-icon">✉</span> Chat <span class="sb-badge" id="chatBadge" style="display:none;">0</span></button></li>
             </ul>
@@ -177,6 +178,43 @@
             <!-- Checkout -->
             <div id="checkoutView" class="view">
                 <div id="checkoutList"></div>
+            </div>
+
+            <!-- Jadwal Tetap -->
+            <div id="jadwalTetapView" class="view">
+                <div class="admin-bar">
+                    <h3>Jadwal Tetap Mingguan</h3>
+                    <button class="btn btn-primary" onclick="showAddJadwalTetap()">+ Tambah Jadwal</button>
+                </div>
+                <p style="font-size:0.85rem;color:var(--text-mid);margin:-8px 0 16px;">Atur jadwal kelas rutin sekali di awal semester. Sistem akan otomatis meng-check-in (booking) ruangan setiap harinya sesuai jadwal ini — Anda tidak perlu booking manual setiap hari lagi.</p>
+
+                <div id="addJadwalTetapForm" style="display:none;" class="panel">
+                    <form id="jadwalTetapForm" class="form-row">
+                        <div class="form-group">
+                            <label>Hari</label>
+                            <select id="jtHari" required>
+                                <option value="">-- Pilih Hari --</option>
+                                <option value="senin">Senin</option>
+                                <option value="selasa">Selasa</option>
+                                <option value="rabu">Rabu</option>
+                                <option value="kamis">Kamis</option>
+                                <option value="jumat">Jumat</option>
+                                <option value="sabtu">Sabtu</option>
+                                <option value="minggu">Minggu</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Pilih Ruangan</label><select id="jtRoom" required><option value="">-- Pilih Ruangan --</option></select></div>
+                        <div class="form-group"><label>Jam Mulai</label><input type="time" id="jtCheckinTime" required></div>
+                        <div class="form-group"><label>Jam Selesai</label><input type="time" id="jtCheckoutTime" required></div>
+                        <div class="form-group"><label>Pilih Dosen</label><select id="jtDosenDropdown"><option value="">-- Pilih dari daftar --</option></select></div>
+                        <div class="form-group"><label>Ketik Manual</label><input type="text" id="jtDosenName" placeholder="Jika dosen tidak ada di daftar"></div>
+                        <div class="form-group"><label>Mata Kuliah</label><input type="text" id="jtMataKuliah" placeholder="Nama mata kuliah" required></div>
+                        <div class="form-group"><label>Mode Kelas</label><select id="jtClassMode" required><option value="offline">Offline (Tatap Muka)</option><option value="zoom">Zoom (Online)</option></select></div>
+                        <div class="form-group form-full"><button type="submit" class="btn btn-primary">Simpan Jadwal</button> <button type="button" class="btn btn-ghost" onclick="hideAddJadwalTetap()">Batal</button></div>
+                    </form>
+                </div>
+
+                <div id="jadwalTetapList"></div>
             </div>
 
             <!-- Absensi -->
