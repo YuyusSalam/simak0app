@@ -3,7 +3,7 @@
    Palette: Deep Navy + Warm Gold + Forest Teal
    ============================================ */
 
-:root {
+   :root {
     --navy:       #1B2A4A;
     --navy-deep:  #0F1B33;
     --navy-light: #2C3E5F;
@@ -330,6 +330,44 @@ body {
 }
 
 .btn-danger:hover { opacity: 0.9; }
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.78rem;
+}
+
+.jt-day-panel {
+    margin-bottom: 14px;
+}
+
+.jt-day-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-lt);
+}
+
+.jt-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-lt);
+}
+
+.jt-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.jt-row-meta {
+    margin: 2px 0 0;
+    font-size: 0.8rem;
+    color: var(--text-mid);
+}
 
 /* ============================================
    SIDEBAR
@@ -686,6 +724,10 @@ body {
 .room-card.status-berlangsung::before { background: var(--amber); }
 .room-card.status-booked::before { background: var(--sky); }
 
+.room-card.status-kosong { background: var(--green-bg); border-color: rgba(46, 125, 79, 0.18); }
+.room-card.status-berlangsung { background: var(--amber-bg); border-color: rgba(184, 134, 11, 0.2); }
+.room-card.status-booked { background: var(--sky-bg); border-color: rgba(40, 116, 166, 0.18); }
+
 .room-card-head {
     display: flex;
     justify-content: space-between;
@@ -708,9 +750,9 @@ body {
     letter-spacing: 0.5px;
 }
 
-.status-kosong .room-tag { background: var(--green-bg); color: var(--green); }
-.status-berlangsung .room-tag { background: var(--amber-bg); color: var(--amber); }
-.status-booked .room-tag { background: var(--sky-bg); color: var(--sky); }
+.status-kosong .room-tag { background: var(--surface); color: var(--green); }
+.status-berlangsung .room-tag { background: var(--surface); color: var(--amber); }
+.status-booked .room-tag { background: var(--surface); color: var(--sky); }
 
 .room-meta {
     display: flex;
