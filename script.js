@@ -225,7 +225,7 @@ function toggleSidebar() {
 
 const pageTitles = {
     cekRuangan: 'Cek Ruangan', checkin: 'Check-in Ruangan', checkout: 'Check-out',
-    absensi: 'Absensi Mahasiswa', chat: 'Chat', kelasSaya: 'Kelas Saya',
+    jadwalTetap: 'Jadwal Tetap', absensi: 'Absensi Mahasiswa', chat: 'Chat', kelasSaya: 'Kelas Saya',
     chatDosen: 'Chat Keti', manageKeti: 'Kelola Keti', manageDosen: 'Kelola Dosen', manageRooms: 'Kelola Ruangan'
 };
 
@@ -252,6 +252,7 @@ document.querySelectorAll('.sb-link').forEach(btn => {
         if (v === 'cekRuangan') loadRooms();
         if (v === 'checkin') loadCheckin();
         if (v === 'checkout') loadCheckout();
+        if (v === 'jadwalTetap') loadJadwalTetap();
         if (v === 'absensi') loadAbsensi();
         if (v === 'chat') loadChat();
         if (v === 'kelasSaya') loadKelasDosen();
@@ -269,6 +270,7 @@ document.querySelectorAll('.sb-link').forEach(btn => {
 function loadKetiDashboard() {
     loadRooms();
     checkAutoCheckout();
+    autoBookJadwalTetapHariIni();
     setInterval(checkAutoCheckout, 10000);
     // Auto-refresh tampilan Cek Ruangan setiap 5 detik
     setInterval(function() {
@@ -301,7 +303,11 @@ async function loadRooms() {
     let html = '';
 
     rooms.forEach(room => {
-        const ci = checkins.find(c => c.room_id === room.id);
+        const roomCis = checkins.filter(c => c.room_id === room.id)
+            .sort((a, b) => timeToMinutes(a.checkin_time) - timeToMinutes(b.checkin_time));
+        // Prioritaskan sesi yang sedang berlangsung, kalau tidak ada pakai booking terdekat berikutnya
+        const ci = roomCis.find(c => c.status === 'checkedin') || roomCis[0];
+        const extraCount = roomCis.length - (ci ? 1 : 0);
         let status = 'kosong', label = 'Kosong', detail = '';
 
         if (ci) {
@@ -311,6 +317,9 @@ async function loadRooms() {
             } else if (ci.status === 'checkedin') {
                 status = 'berlangsung'; label = 'Berlangsung'; counts.active++;
                 detail = `<p><strong>Keti:</strong> ${ci.keti_name}</p><p><strong>Kelas:</strong> ${ci.kelas}</p><p><strong>Dosen:</strong> ${ci.dosen_name}</p><p><strong>Matkul:</strong> ${ci.mata_kuliah}</p><p><strong>Checkout:</strong> ${ci.checkout_time}</p>${ci.mode === 'zoom' ? '<span class="zoom-tag">ZOOM</span>' : ''}`;
+            }
+            if (extraCount > 0) {
+                detail += `<p class="booked-note">+${extraCount} jadwal lain hari ini</p>`;
             }
         } else { counts.free++; }
 
@@ -453,17 +462,57 @@ document.getElementById('bioForm').addEventListener('submit', async function(e) 
     await loadCheckin();
 });
 
+let cachedRoomsForCheckin = [];
+let cachedTodayCheckinsForCheckin = [];
+
+function timesOverlap(startA, endA, startB, endB) {
+    return timeToMinutes(startA) < timeToMinutes(endB) && timeToMinutes(endA) > timeToMinutes(startB);
+}
+
 async function loadAvailableRooms() {
-    const rooms = await sbSelect('rooms', { order: { column: 'id' } });
+    const today = new Date().toISOString().split('T')[0];
+    cachedRoomsForCheckin = await sbSelect('rooms', { order: { column: 'id' } });
     const checkins = await sbSelect('checkins', { neq: { status: 'checkout' } });
+    cachedTodayCheckinsForCheckin = checkins.filter(c => c.date === today);
+    renderRoomOptions();
+}
+
+function renderRoomOptions() {
     const sel = document.getElementById('checkinRoom');
+    if (!sel) return;
+    const prevValue = sel.value;
+    const ciTime = document.getElementById('checkinTime').value;
+    const coTime = document.getElementById('checkoutTime').value;
+    const hasTimeRange = ciTime && coTime && timeToMinutes(coTime) > timeToMinutes(ciTime);
+
     sel.innerHTML = '<option value="">-- Pilih Ruangan --</option>';
-    rooms.forEach(r => {
-        if (!checkins.find(c => c.room_id === r.id)) {
-            sel.innerHTML += `<option value="${r.id}">${r.name} — Lantai ${r.floor} (${r.type === 'lab' ? 'Lab' : 'Kelas'})</option>`;
+    cachedRoomsForCheckin.forEach(r => {
+        const roomBookings = cachedTodayCheckinsForCheckin.filter(c => c.room_id === r.id);
+        const roomLabel = `${r.name} — Lantai ${r.floor} (${r.type === 'lab' ? 'Lab' : 'Kelas'})`;
+
+        if (hasTimeRange) {
+            const conflict = roomBookings.find(c => timesOverlap(ciTime, coTime, c.checkin_time, c.checkout_time));
+            if (conflict) {
+                sel.innerHTML += `<option value="${r.id}" disabled>${roomLabel} — bentrok ${conflict.checkin_time}–${conflict.checkout_time}</option>`;
+            } else {
+                sel.innerHTML += `<option value="${r.id}">${roomLabel}</option>`;
+            }
+        } else {
+            // Jam belum diisi: tampilkan semua ruangan, beri info jika sudah ada jadwal lain hari ini
+            if (roomBookings.length > 0) {
+                const jadwalList = roomBookings.map(c => `${c.checkin_time}–${c.checkout_time}`).join(', ');
+                sel.innerHTML += `<option value="${r.id}">${roomLabel} (sudah ada jadwal: ${jadwalList})</option>`;
+            } else {
+                sel.innerHTML += `<option value="${r.id}">${roomLabel}</option>`;
+            }
         }
     });
+
+    if ([...sel.options].some(o => o.value === prevValue)) sel.value = prevValue;
 }
+
+document.getElementById('checkinTime').addEventListener('change', renderRoomOptions);
+document.getElementById('checkoutTime').addEventListener('change', renderRoomOptions);
 
 document.getElementById('checkinForm').addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -498,8 +547,20 @@ document.getElementById('checkinForm').addEventListener('submit', async function
     const finalDosen = dosenManual || dosenDD;
     if (!finalDosen) { showErrorModal('Harap pilih atau ketik nama dosen!'); return; }
 
+    const roomId = parseInt(document.getElementById('checkinRoom').value);
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    // Validation 3: Cek ulang ke database (real-time) apakah jam bentrok dengan booking lain di ruangan yang sama
+    const existingRoomCheckins = await sbSelect('checkins', { eq: { room_id: roomId }, neq: { status: 'checkout' } });
+    const conflict = existingRoomCheckins.find(c => c.date === todayStr && timesOverlap(ciTime, coTime, c.checkin_time, c.checkout_time));
+    if (conflict) {
+        showErrorModal(`Ruangan ini sudah dibooking pada jam <strong>${conflict.checkin_time}–${conflict.checkout_time}</strong> dan bentrok dengan jadwal yang Anda masukkan (${ciTime}–${coTime}).<br><br>Silakan pilih jam lain yang tidak bertabrakan, atau pilih ruangan lain.`);
+        await loadAvailableRooms();
+        return;
+    }
+
     const ci = {
-        id: generateId(), room_id: parseInt(document.getElementById('checkinRoom').value),
+        id: generateId(), room_id: roomId,
         keti_username: user.username, keti_name: profile.name, angkatan: profile.angkatan, kelas: profile.kelas,
         checkin_time: ciTime, checkout_time: coTime, dosen_name: finalDosen,
         mata_kuliah: document.getElementById('mataKuliah').value,
@@ -552,10 +613,196 @@ function showErrorModal(msg) { document.getElementById('errorMessage').innerHTML
 function closeErrorModal() { document.getElementById('errorModal').classList.remove('show'); }
 
 // ============================================
+// JADWAL TETAP (AUTO BOOKING MINGGUAN)
+// ============================================
+
+const HARI_LIST = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
+const HARI_LABEL = { senin: 'Senin', selasa: 'Selasa', rabu: 'Rabu', kamis: 'Kamis', jumat: 'Jumat', sabtu: 'Sabtu', minggu: 'Minggu' };
+const HARI_BY_JS_DAY = ['minggu', 'senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu']; // Date.getDay(): 0=Minggu..6=Sabtu
+
+function getTodayHari() {
+    return HARI_BY_JS_DAY[new Date().getDay()];
+}
+
+async function loadJadwalTetapRoomOptions() {
+    const rooms = await sbSelect('rooms', { order: { column: 'id' } });
+    const sel = document.getElementById('jtRoom');
+    sel.innerHTML = '<option value="">-- Pilih Ruangan --</option>';
+    rooms.forEach(r => {
+        sel.innerHTML += `<option value="${r.id}">${r.name} — Lantai ${r.floor} (${r.type === 'lab' ? 'Lab' : 'Kelas'})</option>`;
+    });
+}
+
+async function loadJadwalTetapDosenOptions() {
+    const dosens = await sbSelect('dosen_users');
+    const sel = document.getElementById('jtDosenDropdown');
+    sel.innerHTML = '<option value="">-- Pilih dari daftar --</option>';
+    dosens.forEach(d => { sel.innerHTML += `<option value="${d.name}">${d.name}</option>`; });
+}
+
+document.getElementById('jtDosenDropdown').addEventListener('change', function() {
+    if (this.value) document.getElementById('jtDosenName').value = this.value;
+});
+
+function showAddJadwalTetap() {
+    document.getElementById('addJadwalTetapForm').style.display = 'block';
+    loadJadwalTetapRoomOptions();
+    loadJadwalTetapDosenOptions();
+}
+
+function hideAddJadwalTetap() {
+    document.getElementById('addJadwalTetapForm').style.display = 'none';
+    document.getElementById('jadwalTetapForm').reset();
+}
+
+document.getElementById('jadwalTetapForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const user = getCurrentUser();
+    const profiles = await sbSelect('profiles', { eq: { username: user.username } });
+    const profile = profiles[0];
+    if (!profile) { showErrorModal('Lengkapi biodata Anda terlebih dahulu di menu Check-in sebelum membuat jadwal tetap.'); return; }
+
+    const hari = document.getElementById('jtHari').value;
+    const roomId = parseInt(document.getElementById('jtRoom').value);
+    const ciTime = document.getElementById('jtCheckinTime').value;
+    const coTime = document.getElementById('jtCheckoutTime').value;
+    const dosenDD = document.getElementById('jtDosenDropdown').value;
+    const dosenManual = document.getElementById('jtDosenName').value.trim();
+    const finalDosen = dosenManual || dosenDD;
+    const mataKuliah = document.getElementById('jtMataKuliah').value.trim();
+    const mode = document.getElementById('jtClassMode').value;
+
+    if (!hari || !roomId || !ciTime || !coTime) { showErrorModal('Harap lengkapi semua field wajib!'); return; }
+
+    if (timeToMinutes(coTime) <= timeToMinutes(ciTime)) {
+        showErrorModal(`Jam selesai (${coTime}) harus lebih besar dari jam mulai (${ciTime}).<br><br>Contoh: Mulai 08:00, Selesai 10:00`);
+        return;
+    }
+    if (!finalDosen) { showErrorModal('Harap pilih atau ketik nama dosen!'); return; }
+    if (!mataKuliah) { showErrorModal('Harap isi mata kuliah!'); return; }
+
+    // Cek bentrok dengan jadwal tetap lain (siapa pun) di ruangan & hari yang sama
+    const existing = await sbSelect('jadwal_tetap', { eq: { hari: hari, room_id: roomId } });
+    const conflict = existing.find(j => timesOverlap(ciTime, coTime, j.checkin_time, j.checkout_time));
+    if (conflict) {
+        showErrorModal(`Ruangan ini sudah dipakai untuk jadwal tetap hari <strong>${HARI_LABEL[hari]}</strong> jam <strong>${conflict.checkin_time}–${conflict.checkout_time}</strong> (${escapeHtml(conflict.mata_kuliah)} — ${escapeHtml(conflict.keti_name)}).<br><br>Silakan pilih jam atau ruangan lain.`);
+        return;
+    }
+
+    const jt = {
+        id: generateId(), keti_username: user.username, keti_name: profile.name,
+        angkatan: profile.angkatan, kelas: profile.kelas, hari,
+        room_id: roomId, checkin_time: ciTime, checkout_time: coTime,
+        dosen_name: finalDosen, mata_kuliah: mataKuliah, mode, active: true
+    };
+    const saved = await sbInsert('jadwal_tetap', jt);
+    if (!saved) return;
+
+    showToast('Jadwal tetap berhasil disimpan! Ruangan akan otomatis dibooking setiap ' + HARI_LABEL[hari] + '.', 'success');
+    hideAddJadwalTetap();
+    await loadJadwalTetap();
+});
+
+async function loadJadwalTetap() {
+    const user = getCurrentUser();
+    const list = await sbSelect('jadwal_tetap', { eq: { keti_username: user.username } });
+    const rooms = await sbSelect('rooms');
+    const container = document.getElementById('jadwalTetapList');
+
+    let html = '';
+    HARI_LIST.forEach(hari => {
+        const items = list.filter(j => j.hari === hari).sort((a, b) => timeToMinutes(a.checkin_time) - timeToMinutes(b.checkin_time));
+        html += `<div class="panel jt-day-panel"><h4 class="jt-day-title">${HARI_LABEL[hari]}</h4>`;
+        if (items.length === 0) {
+            html += `<p class="no-data" style="margin:0;">Belum ada jadwal</p>`;
+        } else {
+            items.forEach(j => {
+                const room = rooms.find(r => r.id === j.room_id);
+                html += `
+                <div class="jt-row">
+                    <div>
+                        <strong>${escapeHtml(j.mata_kuliah)}</strong>
+                        <p class="jt-row-meta">${j.checkin_time}–${j.checkout_time} · ${room ? escapeHtml(room.name) : '-'} · ${escapeHtml(j.dosen_name)} ${j.mode === 'zoom' ? '<span class="zoom-tag">ZOOM</span>' : ''}</p>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" onclick="deleteJadwalTetap('${j.id}')">Hapus</button>
+                </div>`;
+            });
+        }
+        html += `</div>`;
+    });
+    container.innerHTML = html;
+}
+
+function deleteJadwalTetap(id) {
+    showConfirm(
+        'Hapus jadwal tetap ini? Ruangan tidak akan lagi dibooking otomatis untuk jadwal ini mulai sekarang.',
+        async function() {
+            await sbDelete('jadwal_tetap', { id });
+            showToast('Jadwal tetap dihapus.', 'success');
+            await loadJadwalTetap();
+        },
+        { title: 'Hapus Jadwal Tetap', yesText: 'Ya, Hapus', yesClass: 'btn-danger' }
+    );
+}
+
+// Dipanggil saat keti login / dashboard dimuat: otomatis check-in (booking) ruangan
+// sesuai jadwal tetap hari ini, kalau belum pernah dibooking otomatis hari ini.
+async function autoBookJadwalTetapHariIni() {
+    const user = getCurrentUser();
+    if (!user || user.role !== 'keti') return;
+
+    const todayHari = getTodayHari();
+    const todayDate = new Date().toISOString().split('T')[0];
+
+    const jadwalHariIni = await sbSelect('jadwal_tetap', { eq: { keti_username: user.username, hari: todayHari, active: true } });
+    if (jadwalHariIni.length === 0) return;
+
+    const existingCheckins = await sbSelect('checkins', { eq: { keti_username: user.username, date: todayDate } });
+
+    let autoCount = 0, conflictCount = 0;
+
+    for (const j of jadwalHariIni) {
+        // Sudah pernah dibooking otomatis untuk jadwal ini hari ini? skip.
+        if (existingCheckins.find(c => c.jadwal_tetap_id === j.id)) continue;
+
+        // Cek bentrok dengan checkin lain (siapa pun, ruangan sama) yang sudah ada hari ini
+        const roomCheckinsToday = await sbSelect('checkins', { eq: { room_id: j.room_id }, neq: { status: 'checkout' } });
+        const conflict = roomCheckinsToday.find(c => c.date === todayDate && timesOverlap(j.checkin_time, j.checkout_time, c.checkin_time, c.checkout_time));
+        if (conflict) { conflictCount++; continue; }
+
+        const ci = {
+            id: generateId(), room_id: j.room_id,
+            keti_username: user.username, keti_name: j.keti_name, angkatan: j.angkatan, kelas: j.kelas,
+            checkin_time: j.checkin_time, checkout_time: j.checkout_time, dosen_name: j.dosen_name,
+            mata_kuliah: j.mata_kuliah, mode: j.mode, status: 'booked',
+            date: todayDate, timestamp: Date.now(), jadwal_tetap_id: j.id, source: 'auto'
+        };
+        const saved = await sbInsert('checkins', ci);
+        if (saved) { autoCount++; existingCheckins.push(saved); }
+    }
+
+    if (autoCount > 0) {
+        showToast(`${autoCount} ruangan berhasil dibooking otomatis dari jadwal tetap hari ini (${HARI_LABEL[todayHari]}).`, 'success');
+        loadRooms();
+        if (document.getElementById('checkinView') && document.getElementById('checkinView').classList.contains('active')) loadAvailableRooms();
+    }
+    if (conflictCount > 0) {
+        showToast(`${conflictCount} jadwal tetap gagal dibooking otomatis karena ruangan bentrok jadwal lain. Silakan booking manual.`, 'warning');
+    }
+}
+
+// ============================================
 // AUTO CHECKOUT
 // ============================================
 
 async function checkAutoCheckout() {
+    // Jika tanggal sudah berganti sejak terakhir dicek, jalankan lagi auto-booking jadwal tetap untuk hari baru
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (window.__lastCheckedDate && window.__lastCheckedDate !== todayStr) {
+        autoBookJadwalTetapHariIni();
+    }
+    window.__lastCheckedDate = todayStr;
+
     const checkins = await sbSelect('checkins', { neq: { status: 'checkout' } });
     const now = new Date();
     const ct = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
