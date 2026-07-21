@@ -8,6 +8,24 @@ const SUPABASE_KEY = 'sb_publishable_QLamOF5Ako8MZwafMLY5Rw_TO2TcA9l';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ============================================
+// INTRO SPLASH (hanya main sekali per sesi browser)
+// ============================================
+(function initIntroSplash() {
+    const splash = document.getElementById('introSplash');
+    if (!splash || splash.style.display === 'none') return; // sudah pernah tampil di sesi ini, skip
+
+    const HOLD_MS = 2100;   // durasi animasi masuk + jeda sebelum fade out
+    const FADE_MS = 600;    // durasi transisi fade out (samakan dengan CSS)
+
+    setTimeout(() => {
+        splash.classList.add('intro-fade-out');
+        setTimeout(() => { splash.style.display = 'none'; }, FADE_MS);
+    }, HOLD_MS);
+
+    sessionStorage.setItem('simak_intro_shown', '1');
+})();
+
+// ============================================
 // SUPABASE HELPERS (generic query wrapper)
 // ============================================
 
